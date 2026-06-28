@@ -867,8 +867,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def on_code_item_clicked(self, item):
         row = self.code_list.row(item)
-        if 0 <= row < len(self.code_manager.codes):
-            code_str = self.code_manager.codes[row].context
+        if 0 <= row < len(self.code_manager._all_codes):
+            code_str = self.code_manager._all_codes[row].context
             QtWidgets.QApplication.clipboard().setText(code_str)
             self.statusBar().showMessage(f"📋 Đã copy code: {code_str}", 3000)
 
