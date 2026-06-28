@@ -420,6 +420,7 @@ class MainWindow(QtWidgets.QMainWindow):
         btn_code_layout.addWidget(self.btn_import_code)
         
         self.code_list = QtWidgets.QListWidget()
+        self.code_list.itemClicked.connect(self.on_code_item_clicked)
         
         code_layout.addWidget(lbl_code)
         code_layout.addLayout(range_layout)
@@ -863,6 +864,13 @@ class MainWindow(QtWidgets.QMainWindow):
         for c in codes:
             self.code_list.addItem(c.preview(50))
         self.statusBar().showMessage(f"Đã tải {len(codes)} code thành công.")
+
+    def on_code_item_clicked(self, item):
+        row = self.code_list.row(item)
+        if 0 <= row < len(self.code_manager.codes):
+            code_str = self.code_manager.codes[row].context
+            QtWidgets.QApplication.clipboard().setText(code_str)
+            self.statusBar().showMessage(f"📋 Đã copy code: {code_str}", 3000)
 
     def show_import_text_dialog(self):
         dialog = QtWidgets.QDialog(self)
