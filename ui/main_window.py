@@ -321,6 +321,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.input_end_y.setValue(adb_y)
                 self.save_action_details()
 
+    def start_swipe_recording(self):
+        self.statusBar().showMessage("📸 Đang ghi hình Vuốt... Hãy nhấn giữ chuột, kéo trên LDPlayer rồi thả ra.", 5000)
+        
+        def on_click(x, y, button, pressed):
+            if button == mouse.Button.left:
+                if pressed:
+                    self.coordinate_captured.emit(int(x), int(y), True)
+                else:
+                    self.coordinate_captured.emit(int(x), int(y), False)
+                    return False  # Stop the listener
+                    
+        listener = mouse.Listener(on_click=on_click)
+        listener.start()
+
+
     def _init_ui(self):
         central_widget = QtWidgets.QWidget()
         self.setCentralWidget(central_widget)
@@ -373,10 +388,22 @@ class MainWindow(QtWidgets.QMainWindow):
         lbl_code.setProperty("class", "title")
         
         range_layout = QtWidgets.QHBoxLayout()
-        self.input_code_range = QtWidgets.QLineEdit()
-        self.input_code_range.setPlaceholderText("VD: 1-50 hoặc để trống")
         range_layout.addWidget(QtWidgets.QLabel("Phạm vi:"))
-        range_layout.addWidget(self.input_code_range)
+        
+        self.input_code_start = QtWidgets.QLineEdit()
+        self.input_code_start.setValidator(QtGui.QIntValidator(1, 999999))
+        self.input_code_start.setPlaceholderText("Tất cả")
+        self.input_code_start.setFixedWidth(70)
+        
+        self.input_code_end = QtWidgets.QLineEdit()
+        self.input_code_end.setValidator(QtGui.QIntValidator(1, 999999))
+        self.input_code_end.setPlaceholderText("Tất cả")
+        self.input_code_end.setFixedWidth(70)
+        
+        range_layout.addWidget(QtWidgets.QLabel("Từ:"))
+        range_layout.addWidget(self.input_code_start)
+        range_layout.addWidget(QtWidgets.QLabel("Đến:"))
+        range_layout.addWidget(self.input_code_end)
         btn_code_layout = QtWidgets.QHBoxLayout()
 
         self.btn_fetch_code = QtWidgets.QPushButton("🌐 Tải từ Web")
@@ -540,12 +567,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.input_delay.setRange(0, 60000)
         self.input_delay.setValue(1000)
 
+        self.btn_record_swipe = QtWidgets.QPushButton("📸 Ghi hình Vuốt")
+        self.btn_record_swipe.setProperty("class", "primary")
+        self.btn_record_swipe.clicked.connect(self.start_swipe_recording)
+
         # Add rows (se an hien tuy loai action)
         self.row_x = self.right_layout.addRow("Tọa độ X:", self.input_x)
         self.row_y = self.right_layout.addRow("Tọa độ Y:", self.input_y)
         self.row_end_x = self.right_layout.addRow("Tọa độ tới X:", self.input_end_x)
         self.row_end_y = self.right_layout.addRow("Tọa độ tới Y:", self.input_end_y)
         self.row_duration = self.right_layout.addRow("TG Vuốt (ms):", self.input_duration)
+        self.row_record_swipe = self.right_layout.addRow("", self.btn_record_swipe)
+        
         self.row_text = self.right_layout.addRow("Văn bản:", self.input_text)
         self.row_key = self.right_layout.addRow("Phím cứng:", self.input_key)
         self.row_delay = self.right_layout.addRow("TG Chờ (ms):", self.input_delay)
@@ -686,6 +719,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.show_editor_row(self.input_end_x)
             self.show_editor_row(self.input_end_y)
             self.show_editor_row(self.input_duration)
+            self.show_editor_row(self.btn_record_swipe)
             
         elif a.action_type == ActionType.TEXT:
             self.input_text.setText(a.text)
@@ -788,7 +822,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         has_input_code = any(a.action_type == ActionType.INPUT_CODE for a in self.actions)
         if has_input_code:
-            range_text = self.input_code_range.text()
+            start_text = self.input_code_start.text().strip()
+            end_text = self.input_code_end.text().strip()
+            if not start_text or not end_text:
+                range_text = ""
+            else:
+                range_text = f"{start_text}-{end_text}"
             total_queue = self.code_manager.setup_queue(range_text)
             if total_queue == 0:
                 QtWidgets.QMessageBox.warning(self, "Lỗi", "Không có Code nào trong hàng đợi (Hãy kiểm tra lại phạm vi hoặc tải code)!")
